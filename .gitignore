@@ -2,3 +2,5 @@
 des.md
 AGENTS.md
 plan/
+__pycache__/
+*.py[cod]
