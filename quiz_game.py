@@ -24,14 +24,13 @@ class QuizGame:
         print("4. 점수 확인")
         print("5. 종료")
 
-    # 사용자가 올바른 범위의 숫자를 입력할 때 까지 계속 입력받는 메서드
     def read_number(
         self,
         prompt: str,
         minimum: int,
         maximum: int,
     ) -> int:
-        """지정한 범위의 숫자를 입력할 때까지 반복."""
+        """사용자가 올바른 범위의 숫자를 입력할 때까지 반복."""
         # 올바른 숫자를 입력하면 return으로 끝나는 입력 반복
         while True:
             # 사용자 입력을 받은 뒤 앞뒤 공백 제거
@@ -61,8 +60,46 @@ class QuizGame:
             return number
 
     def play_quiz(self) -> None:
-        """퀴즈 풀기 메뉴의 현재 상태 안내."""
-        print("\n퀴즈 풀기 기능은 아직 준비 중입니다.")
+        """저장된 퀴즈를 순서대로 출제하고 정답 수와 최종 점수 출력."""
+        # 퀴즈 목록이 비어 있으면 안내 후 메뉴로 복귀
+        if not self.quizzes:
+            print("\n등록된 퀴즈가 없습니다.")
+            return
+
+        # 전체 문제 수와 맞힌 문제 수의 초기값 저장
+        total_count = len(self.quizzes)
+        correct_count = 0
+
+        print(f"\n퀴즈를 시작합니다. 총 {total_count}문제입니다.")
+
+        # 퀴즈 목록에서 문제를 하나씩 순서대로 출제
+        for question_number, quiz in enumerate(self.quizzes, start=1):
+            print("\n------------------------------")
+            print(f"[문제 {question_number}]")
+            quiz.display()
+
+            # 기존 공통 입력 메서드로 1~4 범위의 정답 입력
+            selected_answer = self.read_number("정답 입력: ", 1, 4)
+
+            # Quiz 객체의 정답 확인 메서드로 입력한 번호 검사
+            if quiz.is_correct(selected_answer):
+                print("정답입니다!")
+                correct_count += 1
+            else:
+                print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
+
+        # 맞힌 문제 수를 100점 기준 점수로 변환
+        score = self.calculate_score(correct_count, total_count)
+
+        print("\n===== 퀴즈 결과 =====")
+        print(f"전체 문제: {total_count}개")
+        print(f"정답: {correct_count}개")
+        print(f"점수: {score}점")
+
+    def calculate_score(self, correct_count: int, total_count: int) -> int:
+        """정답 수를 100점 기준의 정수 점수로 계산."""
+        # 정답 비율에서 소수점 아래를 버린 0~100점 반환
+        return (correct_count * 100) // total_count
 
     def add_quiz(self) -> None:
         """퀴즈 추가 메뉴의 현재 상태 안내."""
