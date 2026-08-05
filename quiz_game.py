@@ -59,6 +59,20 @@ class QuizGame:
             # 모든 검사를 통과한 숫자를 메서드 호출 위치로 반환
             return number
 
+    def read_text(self, prompt: str) -> str:
+        """사용자가 비어 있지 않은 문자열을 입력할 때까지 반복."""
+        # 올바른 문자열을 입력하면 return으로 끝나는 입력 반복
+        while True:
+            # 사용자 입력을 받은 뒤 앞뒤 공백 제거
+            value = input(prompt).strip()
+
+            # 실제 문자가 있는 입력이면 메서드 호출 위치로 반환
+            if value:
+                return value
+
+            # 빈 문자열이면 안내 후 다시 입력
+            print("값을 입력해 주세요.")
+
     def play_quiz(self) -> None:
         """저장된 퀴즈를 순서대로 출제하고 정답 수와 최종 점수 출력."""
         # 퀴즈 목록이 비어 있으면 안내 후 메뉴로 복귀
@@ -102,12 +116,42 @@ class QuizGame:
         return (correct_count * 100) // total_count
 
     def add_quiz(self) -> None:
-        """퀴즈 추가 메뉴의 현재 상태 안내."""
-        print("\n퀴즈 추가 기능은 아직 준비 중입니다.")
+        """새 퀴즈 정보를 입력받아 현재 퀴즈 목록에 추가."""
+        print("\n===== $$새로운 퀴즈 추가$$ =====")
+
+        # 빈 문자열을 허용하지 않는 공통 입력 메서드로 문제 입력
+        question = self.read_text("문제: ")
+
+        # 네 개의 선택지를 순서대로 입력받아 목록에 저장
+        choices: list[str] = []
+        for choice_number in range(1, 5):
+            choice = self.read_text(f"선택지 {choice_number}: ")
+            choices.append(choice)
+
+        # 공통 숫자 입력 메서드로 1~4 범위의 정답 번호 입력
+        answer = self.read_number("정답 번호 (1~4): ", 1, 4)
+
+        # 입력한 정보로 Quiz 객체를 생성해 현재 퀴즈 목록에 추가
+        new_quiz = Quiz(question, choices, answer)
+        self.quizzes.append(new_quiz)
+
+        print("퀴즈가 추가되었습니다!")
+        print(f"현재 등록된 퀴즈: {len(self.quizzes)}개")
 
     def show_quizzes(self) -> None:
-        """퀴즈 목록 메뉴의 현재 상태 안내."""
-        print("\n퀴즈 목록 기능은 아직 준비 중입니다.")
+        """현재 등록된 모든 퀴즈의 문제와 선택지 출력."""
+        # 퀴즈 목록이 비어 있으면 안내 후 메뉴로 복귀
+        if not self.quizzes:
+            print("\n등록된 퀴즈가 없습니다.")
+            return
+
+        print(f"\n===== 등록된 퀴즈 목록: 총 {len(self.quizzes)}개 =====")
+
+        # 퀴즈 목록의 문제와 선택지를 하나씩 순서대로 출력
+        for question_number, quiz in enumerate(self.quizzes, start=1):
+            print("\n------------------------------")
+            print(f"[문제 {question_number}]")
+            quiz.display()
 
     def show_best_score(self) -> None:
         """점수 확인 메뉴의 현재 상태 안내."""
