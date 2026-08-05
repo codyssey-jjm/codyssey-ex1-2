@@ -66,6 +66,25 @@ class Quiz:
         """사용자가 선택한 번호와 정답 번호의 일치 여부 반환."""
         return selected_answer == self.answer
 
+    def to_dict(self) -> dict:
+        """Quiz 객체를 JSON 저장용 딕셔너리로 변환."""
+        # 객체의 세 속성을 state.json에 저장할 수 있는 형태로 반환
+        return {
+            "question": self.question,
+            "choices": self.choices,
+            "answer": self.answer,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Quiz":
+        """JSON에서 읽은 딕셔너리를 Quiz 객체로 변환."""
+        # 딕셔너리 값을 Quiz 생성자에 전달해 검증된 객체 생성
+        return cls(
+            question=data["question"],
+            choices=data["choices"],
+            answer=data["answer"],
+        )
+
 
 def create_default_quizzes() -> list[Quiz]:
     """Python 기초 주제의 기본 퀴즈 객체 다섯 개 생성 및 반환."""

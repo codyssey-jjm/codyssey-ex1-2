@@ -1,5 +1,9 @@
 """퀴즈 게임의 메뉴와 공통 입력 흐름 관리."""
 
+import json
+# 파일, 폴더 경로를 쉽게 다루기 위해 pathlib라이브러리에서 Path 클래스를 가져옴
+from pathlib import Path
+
 # quiz.py에 작성한 Quiz 클래스와 기본 퀴즈 생성 함수 가져오기
 from quiz import Quiz, create_default_quizzes
 
@@ -8,12 +12,47 @@ class QuizGame:
     """퀴즈 목록, 최고 점수, 메뉴 실행 흐름 관리."""
 
     def __init__(self) -> None:
-        """기본 퀴즈 목록과 최고 점수 초기화."""
+        """기본 상태를 준비하고 저장된 상태 불러오기."""
+        # 실행 위치와 관계없이 프로젝트 루트의 state.json 경로 설정
+        self.state_file: Path = Path(__file__).with_name("state.json")
+
         # 기본 퀴즈 다섯 개를 생성해 게임의 퀴즈 목록으로 저장
         self.quizzes: list[Quiz] = create_default_quizzes()
 
         # 아직 퀴즈를 풀지 않은 상태이므로 최고 점수를 0점으로 저장
         self.best_score: int = 0
+
+        # state.json이 있으면 기본 상태를 저장된 상태로 변경
+        self.load_state()
+
+    def load_state(self) -> None:
+        """state.json에서 퀴즈 목록과 최고 점수 불러오기."""
+        # 저장 파일이 없으면 생성한 기본 상태 유지
+        if not self.state_file.exists():
+            return
+
+        # with 문으로 파일을 사용한 뒤 자동으로 닫기
+        with self.state_file.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+        
+        # JSON의 퀴즈 딕셔너리를 Quiz 객체 목록으로 변환
+        self.quizzes = [
+            Quiz.from_dict(quiz_data)
+            for quiz_data in data["quizzes"]
+        ]
+        self.best_score = data["best_score"]
+
+    def save_state(self) -> None:
+        """현재 퀴즈 목록과 최고 점수를 state.json에 저장."""
+        # Quiz 객체 목록을 JSON에 저장할 수 있는 딕셔너리 목록으로 변환
+        data = {
+            "quizzes": [quiz.to_dict() for quiz in self.quizzes],
+            "best_score": self.best_score,
+        }
+
+        # 한글을 유지하고 읽기 쉬운 형태로 JSON 파일 작성
+        with self.state_file.open("w", encoding="utf-8") as file:
+            json.dump(data, file, ensure_ascii=False, indent=2)
 
     def show_menu(self) -> None:
         """사용자가 선택할 수 있는 전체 메뉴 출력."""
@@ -110,10 +149,25 @@ class QuizGame:
         print(f"정답: {correct_count}개")
         print(f"점수: {score}점")
 
+        # 기존 최고 점수보다 높으면 갱신하고 저장
+        if self.update_best_score(score):
+            print("새로운 최고 점수입니다!")
+
     def calculate_score(self, correct_count: int, total_count: int) -> int:
         """정답 수를 100점 기준의 정수 점수로 계산."""
         # 정답 비율에서 소수점 아래를 버린 0~100점 반환
         return (correct_count * 100) // total_count
+
+    def update_best_score(self, score: int) -> bool:
+        """기존 점수보다 높은 점수를 최고 점수로 저장."""
+        # 최고 점수를 넘지 못하면 값 변경 없이 False 반환
+        if score <= self.best_score:
+            return False
+
+        # 새로운 최고 점수로 변경한 뒤 state.json에 저장
+        self.best_score = score
+        self.save_state()
+        return True
 
     def add_quiz(self) -> None:
         """새 퀴즈 정보를 입력받아 현재 퀴즈 목록에 추가."""
@@ -135,6 +189,9 @@ class QuizGame:
         new_quiz = Quiz(question, choices, answer)
         self.quizzes.append(new_quiz)
 
+        # 새 퀴즈가 재실행 후에도 유지되도록 현재 상태 저장
+        self.save_state()
+
         print("퀴즈가 추가되었습니다!")
         print(f"현재 등록된 퀴즈: {len(self.quizzes)}개")
 
@@ -154,8 +211,8 @@ class QuizGame:
             quiz.display()
 
     def show_best_score(self) -> None:
-        """점수 확인 메뉴의 현재 상태 안내."""
-        print("\n점수 확인 기능은 아직 준비 중입니다.")
+        """현재까지 기록된 최고 점수 출력."""
+        print(f"\n최고 점수: {self.best_score}점")
 
     def run(self) -> None:
         """종료 메뉴를 선택할 때까지 메뉴 실행 반복."""
