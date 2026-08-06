@@ -4,8 +4,9 @@ import json
 # 파일, 폴더 경로를 쉽게 다루기 위해 pathlib라이브러리에서 Path 클래스를 가져옴
 from pathlib import Path
 
-# quiz.py에 작성한 Quiz 클래스와 기본 퀴즈 생성 함수 가져오기
-from quiz import Quiz, create_default_quizzes
+# 기본 퀴즈 생성 함수와 Quiz 클래스 가져오기
+from default_quizzes import create_default_quizzes
+from quiz import Quiz
 
 
 class QuizGame:
