@@ -8,7 +8,6 @@ from quiz import Quiz
 
 def validate_state(data: object) -> tuple[list[Quiz], int]:
     """JSON 전체 구조를 검증하고 사용할 게임 상태 반환."""
-    # JSON의 가장 바깥쪽 값이 딕셔너리인지 검사
     if not isinstance(data, dict):
         raise TypeError("저장 데이터는 딕셔너리여야 합니다.")
 
@@ -16,7 +15,6 @@ def validate_state(data: object) -> tuple[list[Quiz], int]:
     quizzes_data = data["quizzes"]
     best_score = data["best_score"]
 
-    # 퀴즈 데이터가 목록 형식인지 검사
     if not isinstance(quizzes_data, list):
         raise TypeError("quizzes는 목록이어야 합니다.")
 
@@ -26,7 +24,6 @@ def validate_state(data: object) -> tuple[list[Quiz], int]:
     if best_score not in range(0, 101):
         raise ValueError("best_score는 0부터 100 사이여야 합니다.")
 
-    # 각 퀴즈 딕셔너리를 검증된 Quiz 객체로 변환
     quizzes: list[Quiz] = []
     for quiz_data in quizzes_data:
         if not isinstance(quiz_data, dict):
@@ -47,20 +44,16 @@ def load_state(state_file: Path) -> tuple[list[Quiz], int] | None:
         with state_file.open("r", encoding="utf-8") as file:
             data = json.load(file)
 
-        # 전체 검증을 통과한 데이터만 반환
         return validate_state(data)
 
-    # JSON 문법이 손상된 경우 기본 상태 사용 안내
     except json.JSONDecodeError as error:
         print(f"\n저장 파일의 JSON 형식이 손상되었습니다: {error}")
         print("기본 퀴즈로 시작합니다.")
 
-    # 파일 권한이나 경로 문제로 읽지 못한 경우 기본 상태 사용 안내
     except OSError as error:
         print(f"\n저장 파일을 읽을 수 없습니다: {error}")
         print("기본 퀴즈로 시작합니다.")
 
-    # 필수 키 누락이나 잘못된 데이터 형식인 경우 기본 상태 사용 안내
     except (KeyError, TypeError, ValueError) as error:
         print(f"\n저장 데이터의 구조가 올바르지 않습니다: {error}")
         print("기본 퀴즈로 시작합니다.")

@@ -25,16 +25,15 @@ class Quiz:
         if isinstance(answer, bool) or not isinstance(answer, int):
             raise TypeError("정답 번호는 정수여야 합니다.")
 
-        # 문제 앞뒤 공백 제거 및 실제 내용 존재 여부 확인
         question = question.strip()
+
         # 빈 문자열은 False로 취급
         if not question:
             raise ValueError("문제는 비어 있을 수 없습니다.")
         if len(choices) != 4:
             raise ValueError("선택지는 정확히 4개여야 합니다.")
 
-        # 모든 선택지의 문자열 여부 확인 및 앞뒤 공백을 제거한 새 목록 생성
-        # 정리된 선택지를 저장할 빈 리스트 생성
+        # 원본 목록을 바꾸지 않고 공백을 제거한 새 선택지 목록 생성
         normalized_choices: list[str] = []
         for choice in choices:
             if not isinstance(choice, str):
@@ -45,11 +44,9 @@ class Quiz:
                 raise ValueError("선택지는 비어 있을 수 없습니다.")
             normalized_choices.append(normalized_choice)
 
-        # 네 개의 선택지에 맞춘 정답 번호 범위 1~4 검사
         if answer not in range(1, 5):
             raise ValueError("정답 번호는 1부터 4 사이여야 합니다.")
 
-        # 검증을 통과한 값만 객체의 최종 속성으로 저장
         self.question = question
         self.choices = normalized_choices
         self.answer = answer
@@ -68,7 +65,6 @@ class Quiz:
 
     def to_dict(self) -> dict:
         """Quiz 객체를 JSON 저장용 딕셔너리로 변환."""
-        # 객체의 세 속성을 state.json에 저장할 수 있는 형태로 반환
         return {
             "question": self.question,
             "choices": self.choices,
@@ -78,7 +74,7 @@ class Quiz:
     @classmethod
     def from_dict(cls, data: dict) -> "Quiz":
         """JSON에서 읽은 딕셔너리를 Quiz 객체로 변환."""
-        # 딕셔너리 값을 Quiz 생성자에 전달해 검증된 객체 생성
+        # 생성자를 다시 거쳐 저장 데이터에도 동일한 값 검증 적용
         return cls(
             question=data["question"],
             choices=data["choices"],
