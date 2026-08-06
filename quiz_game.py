@@ -25,24 +25,81 @@ class QuizGame:
         # state.json이 있으면 기본 상태를 저장된 상태로 변경
         self.load_state()
 
+    def reset_to_default(self) -> None:
+        """퀴즈 목록과 최고 점수를 기본 상태로 초기화."""
+        # 저장 데이터를 사용할 수 없을 때 기본 퀴즈와 0점으로 복구
+        self.quizzes = create_default_quizzes()
+        self.best_score = 0
+
+    def validate_state(self, data: object) -> tuple[list[Quiz], int]:
+        """JSON 전체 구조를 검증하고 사용할 게임 상태 반환."""
+        # JSON의 가장 바깥쪽 값이 딕셔너리인지 검사
+        if not isinstance(data, dict):
+            raise TypeError("저장 데이터는 딕셔너리여야 합니다.")
+
+        # 필수 키를 가져오며 키가 없으면 KeyError 발생
+        quizzes_data = data["quizzes"]
+        best_score = data["best_score"]
+
+        # 퀴즈 데이터가 목록 형식인지 검사
+        if not isinstance(quizzes_data, list):
+            raise TypeError("quizzes는 목록이어야 합니다.")
+
+        # bool을 제외한 0~100 범위의 정수 점수 검사
+        if isinstance(best_score, bool) or not isinstance(best_score, int):
+            raise TypeError("best_score는 정수여야 합니다.")
+        if best_score not in range(0, 101):
+            raise ValueError("best_score는 0부터 100 사이여야 합니다.")
+
+        # 각 퀴즈 딕셔너리를 검증된 Quiz 객체로 변환
+        quizzes: list[Quiz] = []
+        for quiz_data in quizzes_data:
+            if not isinstance(quiz_data, dict):
+                raise TypeError("각 퀴즈 데이터는 딕셔너리여야 합니다.")
+            quizzes.append(Quiz.from_dict(quiz_data))
+
+        return quizzes, best_score
+
     def load_state(self) -> None:
         """state.json에서 퀴즈 목록과 최고 점수 불러오기."""
-        # 저장 파일이 없으면 생성한 기본 상태 유지
-        if not self.state_file.exists():
+        try:
+            # 저장 파일이 없으면 생성한 기본 상태 유지
+            if not self.state_file.exists():
+                return
+
+            # with 문으로 파일을 사용한 뒤 자동으로 닫기
+            with self.state_file.open("r", encoding="utf-8") as file:
+                data = json.load(file)
+
+            # 전체 검증을 통과한 데이터만 현재 게임 상태로 사용
+            quizzes, best_score = self.validate_state(data)
+
+        # JSON 문법이 손상된 경우 기본 상태로 복구
+        except json.JSONDecodeError as error:
+            print(f"\n저장 파일의 JSON 형식이 손상되었습니다: {error}")
+            print("기본 퀴즈로 시작합니다.")
+            self.reset_to_default()
             return
 
-        # with 문으로 파일을 사용한 뒤 자동으로 닫기
-        with self.state_file.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-        
-        # JSON의 퀴즈 딕셔너리를 Quiz 객체 목록으로 변환
-        self.quizzes = [
-            Quiz.from_dict(quiz_data)
-            for quiz_data in data["quizzes"]
-        ]
-        self.best_score = data["best_score"]
+        # 파일 권한이나 경로 문제로 읽지 못한 경우 기본 상태로 복구
+        except OSError as error:
+            print(f"\n저장 파일을 읽을 수 없습니다: {error}")
+            print("기본 퀴즈로 시작합니다.")
+            self.reset_to_default()
+            return
 
-    def save_state(self) -> None:
+        # 필수 키 누락이나 잘못된 데이터 형식인 경우 기본 상태로 복구
+        except (KeyError, TypeError, ValueError) as error:
+            print(f"\n저장 데이터의 구조가 올바르지 않습니다: {error}")
+            print("기본 퀴즈로 시작합니다.")
+            self.reset_to_default()
+            return
+        
+        # 검증된 상태만 적용
+        self.quizzes = quizzes
+        self.best_score = best_score
+
+    def save_state(self) -> bool:
         """현재 퀴즈 목록과 최고 점수를 state.json에 저장."""
         # Quiz 객체 목록을 JSON에 저장할 수 있는 딕셔너리 목록으로 변환
         data = {
@@ -51,8 +108,14 @@ class QuizGame:
         }
 
         # 한글을 유지하고 읽기 쉬운 형태로 JSON 파일 작성
-        with self.state_file.open("w", encoding="utf-8") as file:
-            json.dump(data, file, ensure_ascii=False, indent=2)
+        try:
+            with self.state_file.open("w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=2)
+        except OSError as error:
+            print(f"\n현재 상태를 저장할 수 없습니다: {error}")
+            return False
+
+        return True
 
     def show_menu(self) -> None:
         """사용자가 선택할 수 있는 전체 메뉴 출력."""
@@ -216,23 +279,30 @@ class QuizGame:
 
     def run(self) -> None:
         """종료 메뉴를 선택할 때까지 메뉴 실행 반복."""
-        # 사용자가 5번을 선택할 때까지 메뉴 반복
-        while True:
-            self.show_menu()
+        try:
+            # 사용자가 5번을 선택할 때까지 메뉴 반복
+            while True:
+                self.show_menu()
 
-            # 공통 숫자 입력 메서드로 1~5 범위의 메뉴 번호 입력
-            selected_menu = self.read_number("메뉴 선택: ", 1, 5)
+                # 공통 숫자 입력 메서드로 1~5 범위의 메뉴 번호 입력
+                selected_menu = self.read_number("메뉴 선택: ", 1, 5)
 
-            # 입력한 메뉴 번호에 맞는 메서드 호출
-            if selected_menu == 1:
-                self.play_quiz()
-            elif selected_menu == 2:
-                self.add_quiz()
-            elif selected_menu == 3:
-                self.show_quizzes()
-            elif selected_menu == 4:
-                self.show_best_score()
-            else:
-                # 5번 선택 시 안내 문구 출력 후 while 반복 종료
-                print("\n퀴즈 게임을 종료합니다.")
-                break
+                # 입력한 메뉴 번호에 맞는 메서드 호출
+                if selected_menu == 1:
+                    self.play_quiz()
+                elif selected_menu == 2:
+                    self.add_quiz()
+                elif selected_menu == 3:
+                    self.show_quizzes()
+                elif selected_menu == 4:
+                    self.show_best_score()
+                else:
+                    # 5번 선택 시 안내 문구 출력 후 while 반복 종료
+                    print("\n퀴즈 게임을 종료합니다.")
+                    break
+
+        # Ctrl+C 또는 입력 스트림 종료 시 현재 상태 저장 후 종료
+        except (KeyboardInterrupt, EOFError):
+            print("\n입력이 중단되었습니다. 현재 상태를 저장하고 종료합니다.")
+            self.save_state()
+            print("퀴즈 게임을 종료합니다.")
