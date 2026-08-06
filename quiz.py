@@ -1,4 +1,4 @@
-"""퀴즈 한 문제의 데이터와 기본 퀴즈 목록 정의."""
+"""퀴즈 한 문제의 데이터와 동작 정의."""
 
 class Quiz:
     """문제 하나와 선택지, 정답 관리.
@@ -25,16 +25,15 @@ class Quiz:
         if isinstance(answer, bool) or not isinstance(answer, int):
             raise TypeError("정답 번호는 정수여야 합니다.")
 
-        # 문제 앞뒤 공백 제거 및 실제 내용 존재 여부 확인
         question = question.strip()
+
         # 빈 문자열은 False로 취급
         if not question:
             raise ValueError("문제는 비어 있을 수 없습니다.")
         if len(choices) != 4:
             raise ValueError("선택지는 정확히 4개여야 합니다.")
 
-        # 모든 선택지의 문자열 여부 확인 및 앞뒤 공백을 제거한 새 목록 생성
-        # 정리된 선택지를 저장할 빈 리스트 생성
+        # 원본 목록을 바꾸지 않고 공백을 제거한 새 선택지 목록 생성
         normalized_choices: list[str] = []
         for choice in choices:
             if not isinstance(choice, str):
@@ -45,11 +44,9 @@ class Quiz:
                 raise ValueError("선택지는 비어 있을 수 없습니다.")
             normalized_choices.append(normalized_choice)
 
-        # 네 개의 선택지에 맞춘 정답 번호 범위 1~4 검사
         if answer not in range(1, 5):
             raise ValueError("정답 번호는 1부터 4 사이여야 합니다.")
 
-        # 검증을 통과한 값만 객체의 최종 속성으로 저장
         self.question = question
         self.choices = normalized_choices
         self.answer = answer
@@ -68,7 +65,6 @@ class Quiz:
 
     def to_dict(self) -> dict:
         """Quiz 객체를 JSON 저장용 딕셔너리로 변환."""
-        # 객체의 세 속성을 state.json에 저장할 수 있는 형태로 반환
         return {
             "question": self.question,
             "choices": self.choices,
@@ -78,46 +74,9 @@ class Quiz:
     @classmethod
     def from_dict(cls, data: dict) -> "Quiz":
         """JSON에서 읽은 딕셔너리를 Quiz 객체로 변환."""
-        # 딕셔너리 값을 Quiz 생성자에 전달해 검증된 객체 생성
+        # 생성자를 다시 거쳐 저장 데이터에도 동일한 값 검증 적용
         return cls(
             question=data["question"],
             choices=data["choices"],
             answer=data["answer"],
         )
-
-
-def create_default_quizzes() -> list[Quiz]:
-    """Python 기초 주제의 기본 퀴즈 객체 다섯 개 생성 및 반환."""
-    # 호출마다 새 목록과 Quiz 객체를 생성해 호출 간 변경 공유 방지
-    return [
-        Quiz(
-            question="Python에서 함수를 정의할 때 사용하는 키워드는?",
-            choices=["def", "function", "func", "lambda"],
-            answer=1,
-        ),
-        Quiz(
-            question="여러 값을 순서대로 저장하며 내용을 변경할 수 있는 자료형은?",
-            choices=["tuple", "list", "set", "str"],
-            answer=2,
-        ),
-        Quiz(
-            question="len() 함수의 역할은?",
-            choices=[
-                "값의 자료형을 확인한다.",
-                "값을 문자열로 변환한다.",
-                "객체에 포함된 항목의 개수를 반환한다.",
-                "숫자를 반올림한다.",
-            ],
-            answer=3,
-        ),
-        Quiz(
-            question="조건문에서 앞선 조건이 거짓일 때 다른 조건을 검사하는 키워드는?",
-            choices=["else", "elif", "then", "switch"],
-            answer=2,
-        ),
-        Quiz(
-            question="키와 값의 쌍으로 데이터를 저장하는 자료형은?",
-            choices=["list", "tuple", "dict", "bool"],
-            answer=3,
-        ),
-    ]
