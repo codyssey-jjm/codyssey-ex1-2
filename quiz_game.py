@@ -1,6 +1,7 @@
 """퀴즈 게임의 메뉴와 공통 입력 흐름 관리."""
 
 import random
+from datetime import datetime
 from pathlib import Path
 
 import quiz_storage
@@ -17,12 +18,14 @@ class QuizGame:
         self.state_file: Path = Path(__file__).with_name("state.json")
         self.quizzes: list[Quiz] = create_default_quizzes()
         self.best_score: int = 0
+        self.history: list[dict] = []
         self.load_state()
 
     def reset_to_default(self) -> None:
         """퀴즈 목록과 최고 점수를 기본 상태로 초기화."""
         self.quizzes = create_default_quizzes()
         self.best_score = 0
+        self.history = []
 
     def load_state(self) -> None:
         """state.json에서 퀴즈 목록과 최고 점수 불러오기."""
@@ -33,7 +36,7 @@ class QuizGame:
             self.reset_to_default()
             return
 
-        self.quizzes, self.best_score = state
+        self.quizzes, self.best_score, self.history = state
 
     def save_state(self) -> bool:
         """현재 퀴즈 목록과 최고 점수를 state.json에 저장."""
@@ -41,6 +44,7 @@ class QuizGame:
             self.state_file,
             self.quizzes,
             self.best_score,
+            self.history,
         )
 
     def show_menu(self) -> None:
@@ -51,7 +55,8 @@ class QuizGame:
         print("3. 퀴즈 목록")
         print("4. 점수 확인")
         print("5. 퀴즈 삭제")
-        print("6. 종료")
+        print("6. 게임 기록")
+        print("7. 종료")
 
     def read_number(
         self,
@@ -173,7 +178,11 @@ class QuizGame:
         print(f"정답: {correct_count}개")
         print(f"점수: {score}점")
 
-        if self.update_best_score(score):
+        is_new_best = self.update_best_score(score)
+        self.record_game_result(total_count, correct_count, score)
+        self.save_state()
+
+        if is_new_best:
             print("새로운 최고 점수입니다!")
 
     def calculate_score(
@@ -188,15 +197,29 @@ class QuizGame:
         return (score_units * 100) // (total_count * 2)
 
     def update_best_score(self, score: int) -> bool:
-        """기존 점수보다 높은 점수를 최고 점수로 저장."""
+        """기존 점수보다 높으면 최고 점수를 갱신하고 True 반환."""
         # 최고 점수를 넘지 못하면 값 변경 없이 False 반환
         if score <= self.best_score:
             return False
 
-        # 새로운 최고 점수로 변경한 뒤 state.json에 저장
         self.best_score = score
-        self.save_state()
         return True
+
+    def record_game_result(
+        self,
+        total_count: int,
+        correct_count: int,
+        score: int,
+    ) -> None:
+        """완료한 퀴즈의 실행 시각과 결과를 기록 목록에 추가."""
+        self.history.append(
+            {
+                "played_at": datetime.now().isoformat(timespec="seconds"),
+                "total_count": total_count,
+                "correct_count": correct_count,
+                "score": score,
+            }
+        )
 
     def add_quiz(self) -> None:
         """새 퀴즈 정보를 입력받아 현재 퀴즈 목록에 추가."""
@@ -275,13 +298,27 @@ class QuizGame:
         """현재까지 기록된 최고 점수 출력."""
         print(f"\n최고 점수: {self.best_score}점")
 
+    def show_history(self) -> None:
+        """완료한 게임의 실행 시각과 결과 목록 출력."""
+        if not self.history:
+            print("\n저장된 게임 기록이 없습니다.")
+            return
+
+        print(f"\n===== 게임 기록: 총 {len(self.history)}개 =====")
+        for record_number, record in enumerate(self.history, start=1):
+            print(
+                f"{record_number}. {record['played_at']} | "
+                f"{record['correct_count']}/{record['total_count']} 정답 | "
+                f"{record['score']}점"
+            )
+
     def run(self) -> None:
         """종료 메뉴를 선택할 때까지 메뉴 실행 반복."""
         try:
             while True:
                 self.show_menu()
 
-                selected_menu = self.read_number("메뉴 선택: ", 1, 6)
+                selected_menu = self.read_number("메뉴 선택: ", 1, 7)
 
                 if selected_menu == 1:
                     self.play_quiz()
@@ -293,6 +330,8 @@ class QuizGame:
                     self.show_best_score()
                 elif selected_menu == 5:
                     self.delete_quiz()
+                elif selected_menu == 6:
+                    self.show_history()
                 else:
                     print("\n퀴즈 게임을 종료합니다.")
                     break
