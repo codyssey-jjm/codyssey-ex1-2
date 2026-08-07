@@ -50,7 +50,8 @@ class QuizGame:
         print("2. 퀴즈 추가")
         print("3. 퀴즈 목록")
         print("4. 점수 확인")
-        print("5. 종료")
+        print("5. 퀴즈 삭제")
+        print("6. 종료")
 
     def read_number(
         self,
@@ -93,6 +94,18 @@ class QuizGame:
                 return value
 
             print("값을 입력해 주세요.")
+
+    def read_confirmation(self, prompt: str) -> bool:
+        """사용자가 y 또는 n을 입력할 때까지 반복."""
+        while True:
+            value = input(prompt).strip().lower()
+
+            if value == "y":
+                return True
+            if value == "n":
+                return False
+
+            print("y 또는 n을 입력해 주세요.")
 
     def read_quiz_answer(self, quiz: Quiz) -> tuple[int, bool]:
         """정답 번호와 실제 힌트 사용 여부 반환."""
@@ -226,6 +239,38 @@ class QuizGame:
             print(f"[문제 {question_number}]")
             quiz.display()
 
+    def delete_quiz(self) -> None:
+        """선택한 퀴즈를 확인 후 삭제하고 현재 상태 저장."""
+        if not self.quizzes:
+            print("\n삭제할 퀴즈가 없습니다.")
+            return
+
+        print("\n===== 삭제할 퀴즈 선택 =====")
+        for question_number, quiz in enumerate(self.quizzes, start=1):
+            print(f"{question_number}. {quiz.question}")
+
+        delete_number = self.read_number(
+            "삭제할 퀴즈 번호: ",
+            1,
+            len(self.quizzes),
+        )
+        delete_index = delete_number - 1
+        selected_quiz = self.quizzes[delete_index]
+
+        print(f"선택한 퀴즈: {selected_quiz.question}")
+        if not self.read_confirmation("정말 삭제하시겠습니까? (y/n): "):
+            print("퀴즈 삭제를 취소했습니다.")
+            return
+
+        deleted_quiz = self.quizzes.pop(delete_index)
+        if not self.save_state():
+            self.quizzes.insert(delete_index, deleted_quiz)
+            print("저장에 실패해 퀴즈 삭제를 취소했습니다.")
+            return
+
+        print("퀴즈가 삭제되었습니다!")
+        print(f"현재 등록된 퀴즈: {len(self.quizzes)}개")
+
     def show_best_score(self) -> None:
         """현재까지 기록된 최고 점수 출력."""
         print(f"\n최고 점수: {self.best_score}점")
@@ -236,7 +281,7 @@ class QuizGame:
             while True:
                 self.show_menu()
 
-                selected_menu = self.read_number("메뉴 선택: ", 1, 5)
+                selected_menu = self.read_number("메뉴 선택: ", 1, 6)
 
                 if selected_menu == 1:
                     self.play_quiz()
@@ -246,6 +291,8 @@ class QuizGame:
                     self.show_quizzes()
                 elif selected_menu == 4:
                     self.show_best_score()
+                elif selected_menu == 5:
+                    self.delete_quiz()
                 else:
                     print("\n퀴즈 게임을 종료합니다.")
                     break
