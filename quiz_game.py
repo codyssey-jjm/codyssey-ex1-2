@@ -1,5 +1,6 @@
 """퀴즈 게임의 메뉴와 공통 입력 흐름 관리."""
 
+import random
 from pathlib import Path
 
 import quiz_storage
@@ -99,12 +100,16 @@ class QuizGame:
             print("\n등록된 퀴즈가 없습니다.")
             return
 
-        total_count = len(self.quizzes)
+        # 저장된 원본 순서는 유지하고 출제용 목록만 무작위로 섞기
+        quiz_order = self.quizzes.copy()
+        random.shuffle(quiz_order)
+
+        total_count = len(quiz_order)
         correct_count = 0
 
         print(f"\n퀴즈를 시작합니다. 총 {total_count}문제입니다.")
 
-        for question_number, quiz in enumerate(self.quizzes, start=1):
+        for question_number, quiz in enumerate(quiz_order, start=1):
             print("\n------------------------------")
             print(f"[문제 {question_number}]")
             quiz.display()
