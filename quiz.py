@@ -1,12 +1,14 @@
 """퀴즈 한 문제의 데이터와 동작 정의."""
 
+
 class Quiz:
-    """문제 하나와 선택지, 정답 관리.
+    """문제 하나와 선택지, 정답, 힌트 관리.
 
     속성:
         question: 사용자에게 보여줄 문제 내용
         choices: 문제와 함께 보여줄 네 개의 선택지
         answer: 1부터 시작하는 정답 선택지 번호
+        hint: 사용자가 요청하면 보여줄 힌트
     """
 
     def __init__(
@@ -14,18 +16,22 @@ class Quiz:
         question: str,
         choices: list[str],
         answer: int,
+        hint: str = "",
     ) -> None:
         """객체 생성에 필요한 값 검증 및 속성 저장."""
         if not isinstance(question, str):
             raise TypeError("문제는 문자열이어야 합니다.")
         if not isinstance(choices, list):
             raise TypeError("선택지는 목록이어야 합니다.")
+        if not isinstance(hint, str):
+            raise TypeError("힌트는 문자열이어야 합니다.")
 
         # bool은 int의 하위 타입이므로 True와 False를 정답 번호에서 제외
         if isinstance(answer, bool) or not isinstance(answer, int):
             raise TypeError("정답 번호는 정수여야 합니다.")
 
         question = question.strip()
+        hint = hint.strip()
 
         # 빈 문자열은 False로 취급
         if not question:
@@ -50,6 +56,7 @@ class Quiz:
         self.question = question
         self.choices = normalized_choices
         self.answer = answer
+        self.hint = hint
 
     def display(self) -> None:
         """문제와 네 개의 선택지 출력."""
@@ -69,6 +76,7 @@ class Quiz:
             "question": self.question,
             "choices": self.choices,
             "answer": self.answer,
+            "hint": self.hint,
         }
 
     @classmethod
@@ -79,4 +87,6 @@ class Quiz:
             question=data["question"],
             choices=data["choices"],
             answer=data["answer"],
+            # 기존 저장 데이터에는 hint 키가 없으므로 빈 문자열 사용
+            hint=data.get("hint", ""),
         )
