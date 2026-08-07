@@ -94,6 +94,23 @@ class QuizGame:
 
             print("값을 입력해 주세요.")
 
+    def read_quiz_answer(self, quiz: Quiz) -> tuple[int, bool]:
+        """정답 번호와 실제 힌트 사용 여부 반환."""
+        selected_answer = self.read_number("정답 입력 (힌트 0): ", 0, 4)
+
+        if selected_answer != 0:
+            return selected_answer, False
+
+        if not quiz.hint:
+            print("등록된 힌트가 없습니다.")
+            selected_answer = self.read_number("정답 입력: ", 1, 4)
+            return selected_answer, False
+
+        print(f"힌트: {quiz.hint}")
+        print("힌트를 사용한 문제는 배점의 절반만 반영됩니다.")
+        selected_answer = self.read_number("정답 입력: ", 1, 4)
+        return selected_answer, True
+
     def play_quiz(self) -> None:
         """선택한 수의 퀴즈를 무작위로 출제하고 최종 점수 출력."""
         if not self.quizzes:
@@ -113,6 +130,7 @@ class QuizGame:
 
         total_count = len(selected_quizzes)
         correct_count = 0
+        hinted_correct_count = 0
 
         print(f"\n퀴즈를 시작합니다. 총 {total_count}문제입니다.")
 
@@ -121,15 +139,21 @@ class QuizGame:
             print(f"[문제 {question_number}]")
             quiz.display()
 
-            selected_answer = self.read_number("정답 입력: ", 1, 4)
+            selected_answer, hint_used = self.read_quiz_answer(quiz)
 
             if quiz.is_correct(selected_answer):
                 print("정답입니다!")
                 correct_count += 1
+                if hint_used:
+                    hinted_correct_count += 1
             else:
                 print(f"오답입니다. 정답은 {quiz.answer}번입니다.")
 
-        score = self.calculate_score(correct_count, total_count)
+        score = self.calculate_score(
+            correct_count,
+            total_count,
+            hinted_correct_count,
+        )
 
         print("\n===== 퀴즈 결과 =====")
         print(f"전체 문제: {total_count}개")
@@ -139,10 +163,16 @@ class QuizGame:
         if self.update_best_score(score):
             print("새로운 최고 점수입니다!")
 
-    def calculate_score(self, correct_count: int, total_count: int) -> int:
-        """정답 수를 100점 기준의 정수 점수로 계산."""
-        # 정답 비율에서 소수점 아래를 버린 0~100점 반환
-        return (correct_count * 100) // total_count
+    def calculate_score(
+        self,
+        correct_count: int,
+        total_count: int,
+        hinted_correct_count: int = 0,
+    ) -> int:
+        """힌트 사용 정답을 절반만 반영해 100점 기준 점수 계산."""
+        # 일반 정답은 2단위, 힌트 사용 정답은 차감 후 1단위로 계산
+        score_units = correct_count * 2 - hinted_correct_count
+        return (score_units * 100) // (total_count * 2)
 
     def update_best_score(self, score: int) -> bool:
         """기존 점수보다 높은 점수를 최고 점수로 저장."""
@@ -167,8 +197,14 @@ class QuizGame:
             choices.append(choice)
 
         answer = self.read_number("정답 번호 (1~4): ", 1, 4)
+        hint = self.read_text("힌트: ")
 
-        new_quiz = Quiz(question, choices, answer)
+        new_quiz = Quiz(
+            question=question,
+            choices=choices,
+            answer=answer,
+            hint=hint,
+        )
         self.quizzes.append(new_quiz)
 
         # 새 퀴즈가 재실행 후에도 유지되도록 현재 상태 저장
