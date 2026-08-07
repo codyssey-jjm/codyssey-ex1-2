@@ -6,7 +6,52 @@ from pathlib import Path
 from quiz import Quiz
 
 
-def validate_state(data: object) -> tuple[list[Quiz], int]:
+def validate_history(history_data: object) -> list[dict]:
+    """JSON의 게임 기록 목록을 검증하고 정리된 목록 반환."""
+    if not isinstance(history_data, list):
+        raise TypeError("history는 목록이어야 합니다.")
+
+    history: list[dict] = []
+    for record_data in history_data:
+        if not isinstance(record_data, dict):
+            raise TypeError("각 게임 기록은 딕셔너리여야 합니다.")
+
+        played_at = record_data["played_at"]
+        total_count = record_data["total_count"]
+        correct_count = record_data["correct_count"]
+        score = record_data["score"]
+
+        if not isinstance(played_at, str):
+            raise TypeError("played_at은 문자열이어야 합니다.")
+        played_at = played_at.strip()
+        if not played_at:
+            raise ValueError("played_at은 비어 있을 수 없습니다.")
+        if isinstance(total_count, bool) or not isinstance(total_count, int):
+            raise TypeError("total_count는 정수여야 합니다.")
+        if total_count < 1:
+            raise ValueError("total_count는 1 이상이어야 합니다.")
+        if isinstance(correct_count, bool) or not isinstance(correct_count, int):
+            raise TypeError("correct_count는 정수여야 합니다.")
+        if correct_count not in range(0, total_count + 1):
+            raise ValueError("correct_count는 전체 문제 수 범위여야 합니다.")
+        if isinstance(score, bool) or not isinstance(score, int):
+            raise TypeError("score는 정수여야 합니다.")
+        if score not in range(0, 101):
+            raise ValueError("score는 0부터 100 사이여야 합니다.")
+
+        history.append(
+            {
+                "played_at": played_at,
+                "total_count": total_count,
+                "correct_count": correct_count,
+                "score": score,
+            }
+        )
+
+    return history
+
+
+def validate_state(data: object) -> tuple[list[Quiz], int, list[dict]]:
     """JSON 전체 구조를 검증하고 사용할 게임 상태 반환."""
     if not isinstance(data, dict):
         raise TypeError("저장 데이터는 딕셔너리여야 합니다.")
@@ -14,6 +59,7 @@ def validate_state(data: object) -> tuple[list[Quiz], int]:
     # 필수 키를 가져오며 키가 없으면 KeyError 발생
     quizzes_data = data["quizzes"]
     best_score = data["best_score"]
+    history_data = data.get("history", [])
 
     if not isinstance(quizzes_data, list):
         raise TypeError("quizzes는 목록이어야 합니다.")
@@ -30,11 +76,12 @@ def validate_state(data: object) -> tuple[list[Quiz], int]:
             raise TypeError("각 퀴즈 데이터는 딕셔너리여야 합니다.")
         quizzes.append(Quiz.from_dict(quiz_data))
 
-    return quizzes, best_score
+    history = validate_history(history_data)
+    return quizzes, best_score, history
 
 
-def load_state(state_file: Path) -> tuple[list[Quiz], int] | None:
-    """JSON 파일에서 검증된 퀴즈 목록과 최고 점수 불러오기."""
+def load_state(state_file: Path) -> tuple[list[Quiz], int, list[dict]] | None:
+    """JSON 파일에서 검증된 퀴즈 목록, 최고 점수, 기록 불러오기."""
     try:
         # 저장 파일이 없으면 호출 위치에서 기본 상태 사용
         if not state_file.exists():
@@ -65,12 +112,14 @@ def save_state(
     state_file: Path,
     quizzes: list[Quiz],
     best_score: int,
+    history: list[dict],
 ) -> bool:
-    """퀴즈 목록과 최고 점수를 JSON 파일에 저장."""
+    """퀴즈 목록, 최고 점수, 게임 기록을 JSON 파일에 저장."""
     # Quiz 객체 목록을 JSON에 저장할 수 있는 딕셔너리 목록으로 변환
     data = {
         "quizzes": [quiz.to_dict() for quiz in quizzes],
         "best_score": best_score,
+        "history": history,
     }
 
     # 한글을 유지하고 읽기 쉬운 형태로 JSON 파일 작성

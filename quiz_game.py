@@ -17,12 +17,14 @@ class QuizGame:
         self.state_file: Path = Path(__file__).with_name("state.json")
         self.quizzes: list[Quiz] = create_default_quizzes()
         self.best_score: int = 0
+        self.history: list[dict] = []
         self.load_state()
 
     def reset_to_default(self) -> None:
         """퀴즈 목록과 최고 점수를 기본 상태로 초기화."""
         self.quizzes = create_default_quizzes()
         self.best_score = 0
+        self.history = []
 
     def load_state(self) -> None:
         """state.json에서 퀴즈 목록과 최고 점수 불러오기."""
@@ -33,7 +35,7 @@ class QuizGame:
             self.reset_to_default()
             return
 
-        self.quizzes, self.best_score = state
+        self.quizzes, self.best_score, self.history = state
 
     def save_state(self) -> bool:
         """현재 퀴즈 목록과 최고 점수를 state.json에 저장."""
@@ -41,6 +43,7 @@ class QuizGame:
             self.state_file,
             self.quizzes,
             self.best_score,
+            self.history,
         )
 
     def show_menu(self) -> None:
