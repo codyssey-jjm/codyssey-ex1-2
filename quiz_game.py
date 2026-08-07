@@ -95,7 +95,7 @@ class QuizGame:
             print("값을 입력해 주세요.")
 
     def play_quiz(self) -> None:
-        """저장된 퀴즈를 순서대로 출제하고 정답 수와 최종 점수 출력."""
+        """선택한 수의 퀴즈를 무작위로 출제하고 최종 점수 출력."""
         if not self.quizzes:
             print("\n등록된 퀴즈가 없습니다.")
             return
@@ -104,12 +104,19 @@ class QuizGame:
         quiz_order = self.quizzes.copy()
         random.shuffle(quiz_order)
 
-        total_count = len(quiz_order)
+        question_count = self.read_number(
+            f"풀 문제 수 (1~{len(quiz_order)}): ",
+            1,
+            len(quiz_order),
+        )
+        selected_quizzes = quiz_order[:question_count]
+
+        total_count = len(selected_quizzes)
         correct_count = 0
 
         print(f"\n퀴즈를 시작합니다. 총 {total_count}문제입니다.")
 
-        for question_number, quiz in enumerate(quiz_order, start=1):
+        for question_number, quiz in enumerate(selected_quizzes, start=1):
             print("\n------------------------------")
             print(f"[문제 {question_number}]")
             quiz.display()
