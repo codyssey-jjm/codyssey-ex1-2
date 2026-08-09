@@ -226,6 +226,12 @@ main.py 실행
 
 ![Python 버전](docs/screenshots/python-version.png)
 
+### Git 커밋 기록
+
+`git log --oneline --graph` 실행 결과입니다.
+
+![Git 커밋 기록](docs/screenshots/git_log_oneline_graph.png)
+
 ### 메인 메뉴
 
 ![메인 메뉴](docs/screenshots/menu.png)
