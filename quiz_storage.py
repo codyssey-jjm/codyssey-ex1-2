@@ -6,6 +6,17 @@ from pathlib import Path
 from quiz import Quiz
 
 
+def _validate_integer(
+    value: object, field: str, minimum: int, maximum: int | None = None
+) -> int:
+    """bool을 제외한 정수 형식과 허용 범위를 검증."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{field}는 정수여야 합니다.")
+    if value < minimum or (maximum is not None and value > maximum):
+        raise ValueError(f"{field}의 값 범위가 올바르지 않습니다.")
+    return value
+
+
 def validate_history(history_data: object) -> list[dict]:
     """JSON의 게임 기록 목록을 검증하고 정리된 목록 반환."""
     if not isinstance(history_data, list):
@@ -17,28 +28,17 @@ def validate_history(history_data: object) -> list[dict]:
             raise TypeError("각 게임 기록은 딕셔너리여야 합니다.")
 
         played_at = record_data["played_at"]
-        total_count = record_data["total_count"]
-        correct_count = record_data["correct_count"]
-        score = record_data["score"]
+        total_count = _validate_integer(record_data["total_count"], "total_count", 1)
+        correct_count = _validate_integer(
+            record_data["correct_count"], "correct_count", 0, total_count
+        )
+        score = _validate_integer(record_data["score"], "score", 0, 100)
 
         if not isinstance(played_at, str):
             raise TypeError("played_at은 문자열이어야 합니다.")
         played_at = played_at.strip()
         if not played_at:
             raise ValueError("played_at은 비어 있을 수 없습니다.")
-        if isinstance(total_count, bool) or not isinstance(total_count, int):
-            raise TypeError("total_count는 정수여야 합니다.")
-        if total_count < 1:
-            raise ValueError("total_count는 1 이상이어야 합니다.")
-        if isinstance(correct_count, bool) or not isinstance(correct_count, int):
-            raise TypeError("correct_count는 정수여야 합니다.")
-        if correct_count not in range(0, total_count + 1):
-            raise ValueError("correct_count는 전체 문제 수 범위여야 합니다.")
-        if isinstance(score, bool) or not isinstance(score, int):
-            raise TypeError("score는 정수여야 합니다.")
-        if score not in range(0, 101):
-            raise ValueError("score는 0부터 100 사이여야 합니다.")
-
         history.append(
             {
                 "played_at": played_at,
@@ -58,17 +58,11 @@ def validate_state(data: object) -> tuple[list[Quiz], int, list[dict]]:
 
     # 필수 키를 가져오며 키가 없으면 KeyError 발생
     quizzes_data = data["quizzes"]
-    best_score = data["best_score"]
+    best_score = _validate_integer(data["best_score"], "best_score", 0, 100)
     history_data = data.get("history", [])
 
     if not isinstance(quizzes_data, list):
         raise TypeError("quizzes는 목록이어야 합니다.")
-
-    # bool을 제외한 0~100 범위의 정수 점수 검사
-    if isinstance(best_score, bool) or not isinstance(best_score, int):
-        raise TypeError("best_score는 정수여야 합니다.")
-    if best_score not in range(0, 101):
-        raise ValueError("best_score는 0부터 100 사이여야 합니다.")
 
     quizzes: list[Quiz] = []
     for quiz_data in quizzes_data:

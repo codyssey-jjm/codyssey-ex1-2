@@ -8,7 +8,8 @@
         "func",
         "lambda"
       ],
-      "answer": 1
+      "answer": 1,
+      "hint": ""
     },
     {
       "question": "여러 값을 순서대로 저장하며 내용을 변경할 수 있는 자료형은?",
@@ -18,7 +19,8 @@
         "set",
         "str"
       ],
-      "answer": 2
+      "answer": 2,
+      "hint": ""
     },
     {
       "question": "len() 함수의 역할은?",
@@ -28,7 +30,8 @@
         "객체에 포함된 항목의 개수를 반환한다.",
         "숫자를 반올림한다."
       ],
-      "answer": 3
+      "answer": 3,
+      "hint": ""
     },
     {
       "question": "조건문에서 앞선 조건이 거짓일 때 다른 조건을 검사하는 키워드는?",
@@ -38,7 +41,8 @@
         "then",
         "switch"
       ],
-      "answer": 2
+      "answer": 2,
+      "hint": ""
     },
     {
       "question": "키와 값의 쌍으로 데이터를 저장하는 자료형은?",
@@ -48,7 +52,8 @@
         "dict",
         "bool"
       ],
-      "answer": 3
+      "answer": 3,
+      "hint": ""
     },
     {
       "question": "스파이더맨4의 부제목은?",
@@ -58,8 +63,17 @@
         "홈커밍",
         "브랜드 뉴 데이"
       ],
-      "answer": 4
+      "answer": 4,
+      "hint": ""
     }
   ],
-  "best_score": 40
+  "best_score": 83,
+  "history": [
+    {
+      "played_at": "2026-08-09T17:56:12",
+      "total_count": 6,
+      "correct_count": 5,
+      "score": 83
+    }
+  ]
 }

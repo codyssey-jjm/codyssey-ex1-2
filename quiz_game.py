@@ -1,6 +1,7 @@
 """퀴즈 게임의 메뉴와 공통 입력 흐름 관리."""
 
 import random
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -8,38 +9,30 @@ import quiz_storage
 from default_quizzes import create_default_quizzes
 from quiz import Quiz
 
+MenuAction = tuple[str, Callable[[], None]]
+
 
 class QuizGame:
-    """퀴즈 목록, 최고 점수, 메뉴 실행 흐름 관리."""
+    """퀴즈 목록, 최고 점수, 게임 기록과 메뉴 실행 흐름 관리."""
 
     def __init__(self) -> None:
-        """기본 상태를 준비하고 저장된 상태 불러오기."""
+        """저장 파일 경로를 준비하고 저장된 상태 불러오기."""
         # 실행 위치와 관계없이 프로젝트 루트의 state.json 경로 설정
         self.state_file: Path = Path(__file__).with_name("state.json")
-        self.quizzes: list[Quiz] = create_default_quizzes()
-        self.best_score: int = 0
-        self.history: list[dict] = []
         self.load_state()
 
-    def reset_to_default(self) -> None:
-        """퀴즈 목록과 최고 점수를 기본 상태로 초기화."""
-        self.quizzes = create_default_quizzes()
-        self.best_score = 0
-        self.history = []
-
     def load_state(self) -> None:
-        """state.json에서 퀴즈 목록과 최고 점수 불러오기."""
+        """state.json에서 퀴즈 목록, 최고 점수와 기록 불러오기."""
         state = quiz_storage.load_state(self.state_file)
 
         # 파일이 없거나 데이터를 사용할 수 없으면 기본 상태로 복구
         if state is None:
-            self.reset_to_default()
-            return
+            state = create_default_quizzes(), 0, []
 
         self.quizzes, self.best_score, self.history = state
 
     def save_state(self) -> bool:
-        """현재 퀴즈 목록과 최고 점수를 state.json에 저장."""
+        """현재 퀴즈 목록, 최고 점수와 기록을 state.json에 저장."""
         return quiz_storage.save_state(
             self.state_file,
             self.quizzes,
@@ -47,16 +40,12 @@ class QuizGame:
             self.history,
         )
 
-    def show_menu(self) -> None:
+    def show_menu(self, menu_actions: tuple[MenuAction, ...]) -> None:
         """사용자가 선택할 수 있는 전체 메뉴 출력."""
         print("\n===== Python 기초 퀴즈 =====")
-        print("1. 퀴즈 풀기")
-        print("2. 퀴즈 추가")
-        print("3. 퀴즈 목록")
-        print("4. 점수 확인")
-        print("5. 퀴즈 삭제")
-        print("6. 게임 기록")
-        print("7. 종료")
+        for number, (label, _) in enumerate(menu_actions, start=1):
+            print(f"{number}. {label}")
+        print(f"{len(menu_actions) + 1}. 종료")
 
     def read_number(
         self,
@@ -84,7 +73,7 @@ class QuizGame:
                 continue
 
             # 변환한 숫자가 허용 범위를 벗어났는지 검사
-            if number < minimum or number > maximum:
+            if not minimum <= number <= maximum:
                 print(f"{minimum}부터 {maximum} 사이의 숫자를 입력해 주세요.")
                 continue
 
@@ -105,10 +94,8 @@ class QuizGame:
         while True:
             value = input(prompt).strip().lower()
 
-            if value == "y":
-                return True
-            if value == "n":
-                return False
+            if value in ("y", "n"):
+                return value == "y"
 
             print("y 또는 n을 입력해 주세요.")
 
@@ -119,15 +106,15 @@ class QuizGame:
         if selected_answer != 0:
             return selected_answer, False
 
-        if not quiz.hint:
+        hint_used = bool(quiz.hint)
+        if hint_used:
+            print(f"힌트: {quiz.hint}")
+            print("힌트를 사용한 문제는 배점의 절반만 반영됩니다.")
+        else:
             print("등록된 힌트가 없습니다.")
-            selected_answer = self.read_number("정답 입력: ", 1, 4)
-            return selected_answer, False
 
-        print(f"힌트: {quiz.hint}")
-        print("힌트를 사용한 문제는 배점의 절반만 반영됩니다.")
         selected_answer = self.read_number("정답 입력: ", 1, 4)
-        return selected_answer, True
+        return selected_answer, hint_used
 
     def play_quiz(self) -> None:
         """선택한 수의 퀴즈를 무작위로 출제하고 최종 점수 출력."""
@@ -135,16 +122,12 @@ class QuizGame:
             print("\n등록된 퀴즈가 없습니다.")
             return
 
-        # 저장된 원본 순서는 유지하고 출제용 목록만 무작위로 섞기
-        quiz_order = self.quizzes.copy()
-        random.shuffle(quiz_order)
-
         question_count = self.read_number(
-            f"풀 문제 수 (1~{len(quiz_order)}): ",
+            f"풀 문제 수 (1~{len(self.quizzes)}): ",
             1,
-            len(quiz_order),
+            len(self.quizzes),
         )
-        selected_quizzes = quiz_order[:question_count]
+        selected_quizzes = random.sample(self.quizzes, question_count)
 
         total_count = len(selected_quizzes)
         correct_count = 0
@@ -178,9 +161,14 @@ class QuizGame:
         print(f"정답: {correct_count}개")
         print(f"점수: {score}점")
 
+        previous_best_score = self.best_score
         is_new_best = self.update_best_score(score)
         self.record_game_result(total_count, correct_count, score)
-        self.save_state()
+        if not self.save_state():
+            self.best_score = previous_best_score
+            self.history.pop()
+            print("저장에 실패해 최고 점수와 게임 기록을 반영하지 않았습니다.")
+            return
 
         if is_new_best:
             print("새로운 최고 점수입니다!")
@@ -227,10 +215,10 @@ class QuizGame:
 
         question = self.read_text("문제: ")
 
-        choices: list[str] = []
-        for choice_number in range(1, 5):
-            choice = self.read_text(f"선택지 {choice_number}: ")
-            choices.append(choice)
+        choices = [
+            self.read_text(f"선택지 {choice_number}: ")
+            for choice_number in range(1, 5)
+        ]
 
         answer = self.read_number("정답 번호 (1~4): ", 1, 4)
         hint = self.read_text("힌트: ")
@@ -288,9 +276,9 @@ class QuizGame:
             print("퀴즈 삭제를 취소했습니다.")
             return
 
-        deleted_quiz = self.quizzes.pop(delete_index)
+        self.quizzes.pop(delete_index)
         if not self.save_state():
-            self.quizzes.insert(delete_index, deleted_quiz)
+            self.quizzes.insert(delete_index, selected_quiz)
             print("저장에 실패해 퀴즈 삭제를 취소했습니다.")
             return
 
@@ -317,27 +305,27 @@ class QuizGame:
 
     def run(self) -> None:
         """종료 메뉴를 선택할 때까지 메뉴 실행 반복."""
+        menu_actions: tuple[MenuAction, ...] = (
+            ("퀴즈 풀기", self.play_quiz),
+            ("퀴즈 추가", self.add_quiz),
+            ("퀴즈 목록", self.show_quizzes),
+            ("점수 확인", self.show_best_score),
+            ("퀴즈 삭제", self.delete_quiz),
+            ("게임 기록", self.show_history),
+        )
+        exit_number = len(menu_actions) + 1
+
         try:
             while True:
-                self.show_menu()
+                self.show_menu(menu_actions)
 
-                selected_menu = self.read_number("메뉴 선택: ", 1, 7)
+                selected_menu = self.read_number("메뉴 선택: ", 1, exit_number)
 
-                if selected_menu == 1:
-                    self.play_quiz()
-                elif selected_menu == 2:
-                    self.add_quiz()
-                elif selected_menu == 3:
-                    self.show_quizzes()
-                elif selected_menu == 4:
-                    self.show_best_score()
-                elif selected_menu == 5:
-                    self.delete_quiz()
-                elif selected_menu == 6:
-                    self.show_history()
-                else:
+                if selected_menu == exit_number:
                     print("\n퀴즈 게임을 종료합니다.")
                     break
+
+                menu_actions[selected_menu - 1][1]()
 
         # Ctrl+C 또는 입력 스트림 종료 시 현재 상태 저장 후 종료
         except (KeyboardInterrupt, EOFError):

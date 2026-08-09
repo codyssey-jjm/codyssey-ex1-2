@@ -39,16 +39,13 @@ class Quiz:
         if len(choices) != 4:
             raise ValueError("선택지는 정확히 4개여야 합니다.")
 
-        # 원본 목록을 바꾸지 않고 공백을 제거한 새 선택지 목록 생성
-        normalized_choices: list[str] = []
-        for choice in choices:
-            if not isinstance(choice, str):
-                raise TypeError("각 선택지는 문자열이어야 합니다.")
+        if not all(isinstance(choice, str) for choice in choices):
+            raise TypeError("각 선택지는 문자열이어야 합니다.")
 
-            normalized_choice = choice.strip()
-            if not normalized_choice:
-                raise ValueError("선택지는 비어 있을 수 없습니다.")
-            normalized_choices.append(normalized_choice)
+        # 원본 목록을 바꾸지 않고 공백을 제거한 새 선택지 목록 생성
+        normalized_choices = [choice.strip() for choice in choices]
+        if not all(normalized_choices):
+            raise ValueError("선택지는 비어 있을 수 없습니다.")
 
         if answer not in range(1, 5):
             raise ValueError("정답 번호는 1부터 4 사이여야 합니다.")
