@@ -244,7 +244,10 @@ class QuizGame:
         self.quizzes.append(new_quiz)
 
         # 새 퀴즈가 재실행 후에도 유지되도록 현재 상태 저장
-        self.save_state()
+        if not self.save_state():
+            self.quizzes.pop()
+            print("저장에 실패해 퀴즈 추가를 취소했습니다.")
+            return
 
         print("퀴즈가 추가되었습니다!")
         print(f"현재 등록된 퀴즈: {len(self.quizzes)}개")

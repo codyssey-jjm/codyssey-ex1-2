@@ -97,6 +97,10 @@ def load_state(state_file: Path) -> tuple[list[Quiz], int, list[dict]] | None:
         print(f"\n저장 파일의 JSON 형식이 손상되었습니다: {error}")
         print("기본 퀴즈로 시작합니다.")
 
+    except UnicodeDecodeError as error:
+        print(f"\n저장 파일을 UTF-8로 읽을 수 없습니다: {error}")
+        print("기본 퀴즈로 시작합니다.")
+
     except OSError as error:
         print(f"\n저장 파일을 읽을 수 없습니다: {error}")
         print("기본 퀴즈로 시작합니다.")
