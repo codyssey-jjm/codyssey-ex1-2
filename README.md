@@ -105,7 +105,6 @@ python3 main.py
 ├── quiz_storage.py          # JSON 검증, 저장, 불러오기
 ├── default_quizzes.py       # Python 기초 기본 퀴즈
 ├── state.json               # 퀴즈, 최고 점수, 게임 기록
-├── readonly.md              # 학습 내용과 프로젝트 설명 정리
 ├── docs/
 │   └── screenshots/         # 개발 환경과 실행 화면
 ├── README.md
