@@ -231,6 +231,20 @@ main.py 실행
 
 ![Git 커밋 기록](docs/screenshots/git_log_oneline_graph.png)
 
+### Git 원격 저장소 실습
+
+#### `git clone`
+
+원격 저장소의 프로젝트와 변경 이력을 새로운 로컬 디렉터리에 복제한 결과입니다.
+
+![git clone 실습](docs/screenshots/git_clone.png)
+
+#### `git pull`
+
+원격 저장소의 새로운 변경 내용을 기존 로컬 작업 디렉터리에 반영한 결과입니다.
+
+![git pull 실습](docs/screenshots/git_pull.png)
+
 ### 메인 메뉴
 
 ![메인 메뉴](docs/screenshots/menu.png)
